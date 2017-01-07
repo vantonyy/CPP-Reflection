@@ -1,58 +1,95 @@
 #ifndef APPLICATION_HPP
 #define APPLICATION_HPP
 
-#include "reflect.hpp"
+#include "debug.hpp"
 #include "exception.hpp"
-#include "visitor.hpp"
+#include "messenger.hpp"
 #include "option.hpp"
+#include "reflect_output.hpp"
+#include "visitor.hpp"
 
-#include <clang/Tooling/CommonOptionsParser.h>
-#include "clang/Frontend/CompilerInstance.h"
+#include <clang/Frontend/CompilerInstance.h>
 
 ///@{
 //Should be move to application.cpp
-#include "clang/Basic/Diagnostic.h"
-#include "clang/Basic/FileManager.h"
-#include "clang/Basic/SourceManager.h"
-#include "clang/Basic/TargetOptions.h"
-#include "clang/Basic/TargetInfo.h"
-#include "clang/Parse/ParseAST.h"
-#include "clang/Rewrite/Core/Rewriter.h"
-#include "clang/Rewrite/Frontend/Rewriters.h"
-#include "clang/Basic/DiagnosticOptions.h"
-#include "llvm/Support/Host.h"
-#include "llvm/Support/raw_ostream.h"
-#include <llvm/ADT/Twine.h>
-
-#include <cstdio>
-#include <sstream>
+#include <clang/Basic/Diagnostic.h>
+#include <clang/Basic/FileManager.h>
+#include <clang/Basic/LangOptions.h>
+#include <clang/Basic/SourceManager.h>
+#include <clang/Basic/TargetInfo.h>
+#include <clang/Basic/TargetOptions.h>
+#include <clang/Parse/ParseAST.h>
+#include <llvm/Support/raw_ostream.h>
 ///}@
 
 #include <string>
-#include <iostream>
-#include <map>
-#include <vector>
-#include <cassert> 
-
-#define ASSERT assert
 
 namespace reflector {
+
+///@{
+//Should be move to application.cpp
+// @class writer
+class writer
+{
+public:
+	explicit writer(const std::string& out_name)
+		: m_error_info()
+		, m_out_file(llvm::StringRef(out_name), m_error_info, llvm::sys::fs::F_Text)
+	{
+	}
+
+	~writer()
+	{
+		m_out_file.close();
+	}
+
+	void write_reflected(reflected_class::reflected_collection& reflected)
+	{
+		reflect_output out(m_out_file);
+		out.dump(reflected);
+	}
+
+	bool ok() const
+	{
+		static std::error_code non_error;
+		return non_error == m_error_info;
+	}
+
+	std::string error_message() const
+	{
+		return m_error_info.message();
+	}
+
+private:
+	std::error_code m_error_info;
+	llvm::raw_fd_ostream m_out_file;
+}; // class writer
+///@}
 
 // @class application
 class application
 {
 public:
-        application(int c, char const **v)
-		: m_option(c, v)
-        {
-		if (m_option.is_valid()) {
-			init_compiler_instance();
-		}
-        }
+	application(int c, char const **v);
 public:
-       	int run();
-private:
-	void init_compiler_instance();
+	int run();
+
+	static const std::string& get_name();
+
+	static const std::string& get_description();
+private:	
+	void initialize_compiler();
+
+	void set_header_search_options(clang::CompilerInstance& c);
+
+	void set_invocation(clang::CompilerInstance& c);
+
+	void set_default_target_triple(clang::CompilerInstance& c);
+	
+	void set_main_file_id(clang::CompilerInstance& c);
+
+	void parse_the_AST();
+
 private:
         clang::CompilerInstance m_compiler;
 	reflector::option m_option;
@@ -60,57 +97,116 @@ private:
 
 ///@{
 //Should be move to application.cpp
-void application::init_compiler_instance()
+application::application(int c, char const **v)
+	: m_option(c, v)
+{
+	if (m_option.is_valid()) {
+		initialize_compiler();
+	}
+}
+
+const std::string& application::get_name()
+{
+	static const std::string name = "greflect";
+	return name;
+}
+
+const std::string& application::get_description()
+{
+	static const std::string desc = "Generate reflection for C++ programming language";
+	return desc;
+}
+
+void application::initialize_compiler()
 {
 	m_compiler.createDiagnostics();
-	typedef std::shared_ptr<clang::TargetOptions> target_opts_ptr;
-	target_opts_ptr target_option(new clang::TargetOptions);
-	target_option->Triple = llvm::sys::getDefaultTargetTriple();
-	clang::TargetInfo *target_info = clang::TargetInfo::CreateTargetInfo(
-		m_compiler.getDiagnostics(),
-		target_opts_ptr(target_option));
-	m_compiler.setTarget(target_info);
+	set_header_search_options(m_compiler);
+	set_invocation(m_compiler);
+	set_default_target_triple(m_compiler);
 	m_compiler.createFileManager();
-	clang::FileManager& file_mgr = m_compiler.getFileManager();
-	m_compiler.createSourceManager(file_mgr);
+	m_compiler.createSourceManager(m_compiler.getFileManager());
 	m_compiler.createPreprocessor(clang::TU_Complete);
+	m_compiler.getPreprocessorOpts().UsePredefines = false;
 	m_compiler.createASTContext();
-	clang::SourceManager& source_mgr = m_compiler.getSourceManager();
-	clang::Rewriter rewriter;
-	rewriter.setSourceMgr(source_mgr, m_compiler.getLangOpts());
-	m_compiler.setASTConsumer(std::unique_ptr<clang::ASTConsumer>(new reflector::consumer(rewriter)));
-	const clang::FileEntry* input_file = m_compiler.getFileManager().getFile(m_option.get_input_file_name());
-	if (0 == input_file) {
-		throw reflector::exception("Error: Input file with name '" + m_option.get_input_file_name() + "' not found");
+	set_main_file_id(m_compiler);
+}
+
+void application::set_header_search_options(clang::CompilerInstance& c)
+{
+	clang::HeaderSearchOptions &h = c.getHeaderSearchOpts();
+	h.AddPath("/usr/include/c++/4.6", clang::frontend::Angled, false, false);
+	h.AddPath("/usr/include/c++/4.6/i686-linux-gnu", clang::frontend::Angled, false, false);
+	h.AddPath("/usr/include/c++/4.6/backward", clang::frontend::Angled, false, false);
+	h.AddPath("/usr/local/include", clang::frontend::Angled, false, false);
+	h.AddPath("/usr/local/lib/clang/3.3/include", clang::frontend::Angled, false, false);
+	h.AddPath("/usr/include/i386-linux-gnu", clang::frontend::Angled, false, false);
+	h.AddPath("/usr/include", clang::frontend::Angled, false, false);
+	h.AddPath("/c/msys64/mingw64/include", clang::frontend::Angled, false, false);
+}
+
+void application::set_invocation(clang::CompilerInstance& c)
+{
+	ASSERT(c.hasDiagnostics());
+	clang::CompilerInvocation* invocation = new clang::CompilerInvocation;
+	clang::CompilerInvocation::CreateFromArgs(
+				*invocation, m_option.arg_begin(), m_option.arg_end(), c.getDiagnostics());
+	clang::LangOptions lang_opts;
+	lang_opts.GNUMode = 1;
+	lang_opts.CXXExceptions = 1;
+	lang_opts.RTTI = 1;
+	lang_opts.Bool = 1;
+	lang_opts.CPlusPlus = 1;
+	invocation->setLangDefaults(lang_opts, clang::IK_CXX, clang::LangStandard::lang_cxx0x);
+	c.setInvocation(invocation);
+}
+
+void application::set_default_target_triple(clang::CompilerInstance& c)
+{
+	std::shared_ptr<clang::TargetOptions> to = std::make_shared<clang::TargetOptions>();
+	to->Triple = llvm::sys::getDefaultTargetTriple();
+	ASSERT(c.hasDiagnostics());
+	c.setTarget(clang::TargetInfo::CreateTargetInfo(c.getDiagnostics(), to));
+}
+
+void application::set_main_file_id(clang::CompilerInstance& c)
+{
+	ASSERT(m_compiler.hasSourceManager());
+	const clang::FileEntry* file = c.getFileManager().getFile(m_option.get_input_file_name());
+	ASSERT(0 != file);
+	clang::SourceManager& sc_mgr = c.getSourceManager();
+	sc_mgr.setMainFileID(sc_mgr.createFileID(file, clang::SourceLocation(), clang::SrcMgr::C_User));
+}
+
+void application::parse_the_AST()
+{
+	writer w(m_option.get_output_file_name());
+	if (!w.ok()) {
+		throw reflector::exception(w.error_message());
 	}
-	m_compiler.getSourceManager().setMainFileID(m_compiler.getSourceManager()
-		.createFileID(input_file, clang::SourceLocation(), clang::SrcMgr::C_User));
+	ASSERT(m_compiler.hasSourceManager());
+	clang::SourceManager& sc_mgr = m_compiler.getSourceManager();
+	clang::Rewriter rewrite;
+	clang::LangOptions& lopts = m_compiler.getLangOpts();
+	rewrite.setSourceMgr(sc_mgr, lopts);
+	ASSERT(m_compiler.hasPreprocessor());
+	clang::Preprocessor& preproc = m_compiler.getPreprocessor();
+	m_compiler.getDiagnosticClient().BeginSourceFile(lopts, &preproc);
+	ASSERT(m_compiler.hasASTContext());
+	reflector::consumer consumer(rewrite);
+	ParseAST(preproc, &consumer, m_compiler.getASTContext());
+	m_compiler.getDiagnosticClient().EndSourceFile();
+	reflected_class::reflected_collection reflected;
+	consumer.get_reflected_classes(reflected);
+	w.write_reflected(reflected);
 }
 
 int application::run()
 {
 	if (!m_option.is_valid()) {
-		throw reflector::exception(m_option.help());
-	}
-	ASSERT(m_compiler.hasASTConsumer());
-	ASSERT(m_compiler.hasASTContext());
-	ASSERT(m_compiler.hasFileManager());
-	ASSERT(m_compiler.hasPreprocessor());
-	ASSERT(m_compiler.hasTarget());
-	reflector::consumer& cons = static_cast<reflector::consumer&>(m_compiler.getASTConsumer());
-	m_compiler.getDiagnosticClient().BeginSourceFile(m_compiler.getLangOpts(), 
-							&m_compiler.getPreprocessor());
-	clang::ParseAST(m_compiler.getPreprocessor(), &cons, m_compiler.getASTContext(), clang::TU_Complete);
-	
-	m_compiler.getDiagnosticClient().EndSourceFile();
-	const clang::RewriteBuffer* buffer = cons.get_rewriter().getRewriteBufferFor(m_compiler
-							                     .getSourceManager()
-						                             .getMainFileID());
-	if (0 == buffer) {
-		//llvm::errs() << "Error:...";
 		return 1;
 	}
-	llvm::outs() << std::string(buffer->begin(), buffer->end());
+	parse_the_AST();
+	massenger::print("Generated as reflected output: " + m_option.get_output_file_name());
 	return 0;
 }
 ///@}

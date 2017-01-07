@@ -1,85 +1,90 @@
-///Temporary solution should be use clang::optionsParser
-#pragma once
+#ifndef OPTION_HPP
+#define OPTION_HPP
 
-#include <vector>
+#include "messenger.hpp"
+
+#include <clang/Basic/FileManager.h>
+
 #include <string>
-#include <iostream>
 
 namespace reflector {
 
-namespace info {
-const std::string name    = "Reflection Generator";
-const std::string disc    = "Reflection Generator for C++ programming language ";
-const std::string version = "Version: v:0001";
-const std::string help    = "Generic Options:\n"
-			    "   -help                 - Display available options (-help-hidden for more)\n"
-			    "   -version              - Display the version of this program\n"
-  			    "Reflect options:\n"
-			    "   -i     		      - Input file name\n"
-			    "   -o                    - Output file name\n";
-}
-
+// @class option
 class option
 {
 public:
-	class data
+	option(int c, char const** v)
+		: m_arg_count(c)
+		, m_arg_value(v)
+		, m_in_name("")
+		, m_out_name("")
 	{
-	public:
-		std::string path;
-		std::string input_file_name;
-		std::string output_file_name;
-	};
-
-	option(int c, char const **v)
-		: m_is_valid(pars(c, v))
-	{
+		parse();
 	}
 
 	const std::string& get_input_file_name() const
 	{
-		return m_data.input_file_name;
+		return m_in_name;
 	}
 
 	const std::string& get_output_file_name() const
 	{
-		return m_data.output_file_name;
+		return m_out_name;
+	}
+
+	const char* const* arg_begin() const
+	{
+		return m_arg_value + 1;
+	}
+
+	const char* const* arg_end() const
+	{
+		return m_arg_value + m_arg_count;
 	}
 
 	bool is_valid() const
 	{
-		return m_is_valid;
+		return !m_in_name.empty() && !m_out_name.empty();
 	}
 
-	const std::string& help() const
-	{
-		return info::help;
-	}
 private:
-	bool pars(int c, char const **v)
+	void parse()
 	{
-		if (c == 2) {
-			if (0 == strcmp(v[1], "-version")) {
-				throw reflector::exception(info::version);
-			}
-			else if (0 == strcmp(v[1], "-help")) {
-				throw reflector::exception(info::help);
-			}
-		} else if (c == 5) {
-			for (int i = 1; i != c - 1; ++i) {
-				if (0 == strcmp(v[i], "-i")) {
-					m_data.input_file_name = v[i + 1];
-				}
-				else if (0 == strcmp(v[i], "-o")) {
-					m_data.output_file_name = v[i + 1];
-				}
-			}
+		if (m_arg_count != 2 ) {
+			massenger::print("Usage: " + usage());
+			return;
 		}
-		m_data.path = v[0];
-		return !m_data.input_file_name.empty();
+		if (!exist_file(m_arg_value[1])) {
+			massenger::error("The file with name '" + std::string(m_arg_value[1]) + "' does not exist");
+			return;
+		}
+		m_in_name = m_arg_value[1];
+		m_out_name = m_in_name.substr(0, m_in_name.find('.')) + "_reflected.hpp";
+		if (exist_file(m_out_name.c_str())) {
+			massenger::worrning("The file with name '" + m_out_name + "'" + "rewrited");
+		}
 	}
-private:
-	data m_data;
-	bool m_is_valid;
-};
 
-}
+	bool exist_file(const char* file_name)
+	{
+		static clang::FileSystemOptions fso;
+		clang::FileManager fm(fso);
+		return 0 != fm.getFile(file_name);
+	}
+
+	std::string usage() const
+	{
+		static std::string u = std::string(m_arg_value[0]) + "  <source file>\n";
+		return u;
+	}
+
+private:
+	unsigned m_arg_count;
+	char const** m_arg_value;
+	std::string m_in_name;
+	std::string m_out_name;
+}; // class option
+
+} // namespace reflector
+
+#endif // OPTION_HPP

@@ -1,18 +1,17 @@
 #include "application.hpp"
+#include "exception.hpp"
+#include "messenger.hpp"
 
-#include <exception>
-#include <iostream>
-
-int main(int ac, char const **av)
+int main(int argc, char const **argv)
 {
 	try {
-                return reflector::application(ac, av).run();
+                return reflector::application(argc, argv).run();
 	} catch(const std::exception& e) {
-		std::cerr << "Error: " << e.what() << std::endl; 
+		massenger::error(e.what()); 
 	} catch(const reflector::exception& e) {
-		std::cerr << e.get_msg() << std::endl;
+		massenger::error(e.get_msg());
 	} catch(...) {
-		std::cerr << "Error: " << "Unhandled exception." << std::endl;
+		massenger::error("Unhandled exception\n");
 	}
 	return 1;
 }
