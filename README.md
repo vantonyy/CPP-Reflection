@@ -10,7 +10,7 @@
 - Installation:
 
 - Usage:
-greflect <input file .cpp and.h/.hpp>
+greflect input file *(.cpp or .hpp/.h)
 - Bug Reporting:
 
 - Tests:
