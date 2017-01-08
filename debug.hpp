@@ -8,7 +8,7 @@
 #ifdef DEBUG_BUILD
 #define ASSERT( x ) assert( x )
 #else 
-#define ASSERT ( x ) (void)sizeof(x);
+#define ASSERT ( x ) (void)sizeof( x );
 #endif // DEBUG_BUILD
 
 #endif // DEBUG_HPP
