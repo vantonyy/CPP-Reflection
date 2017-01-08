@@ -50,10 +50,9 @@ public:
 	{
 		source_class::method_iterator i = m_source_class->method_begin();
 		for (; i != m_source_class->method_end(); ++i) {
-			if (need_skip(i)) {
-				continue;
+			if (!need_skip(i)) {
+				return true;
 			}
-			return true;
 		}
 		return false;
 	}
