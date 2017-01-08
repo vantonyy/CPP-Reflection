@@ -1,10 +1,9 @@
 #ifndef APPLICATION_HPP
 #define APPLICATION_HPP
 
+#include "cmd_parser.hpp"
 #include "debug.hpp"
-#include "exception.hpp"
 #include "messenger.hpp"
-#include "option.hpp"
 #include "reflect_output.hpp"
 #include "visitor.hpp"
 
@@ -93,15 +92,15 @@ private:
 
 private:
         clang::CompilerInstance m_compiler;
-	reflector::option m_option;
+	reflector::cmd_parser m_cmd_parser;
 }; // class application
 
 ///@{
 //Should be move to application.cpp
 application::application(int c, char const **v)
-	: m_option(c, v)
+	: m_cmd_parser(c, v)
 {
-	if (m_option.is_valid()) {
+	if (m_cmd_parser.is_valid()) {
 		initialize_compiler();
 	}
 }
@@ -149,7 +148,7 @@ void application::set_invocation()
 	ASSERT(m_compiler.hasDiagnostics());
 	clang::CompilerInvocation* invocation = new clang::CompilerInvocation;
 	clang::CompilerInvocation::CreateFromArgs(
-				*invocation, m_option.arg_begin(), m_option.arg_end(), m_compiler.getDiagnostics());
+				*invocation, m_cmd_parser.begin() + 1, m_cmd_parser.end(), m_compiler.getDiagnostics());
 	clang::LangOptions lang_opts;
 	lang_opts.GNUMode = 1;
 	lang_opts.CXXExceptions = 1;
@@ -171,7 +170,7 @@ void application::set_default_target_triple()
 void application::set_main_file_id()
 {
 	ASSERT(m_compiler.hasSourceManager());
-	const clang::FileEntry* file = m_compiler.getFileManager().getFile(m_option.get_input_file_name());
+	const clang::FileEntry* file = m_compiler.getFileManager().getFile(m_cmd_parser.get_input_file());
 	ASSERT(0 != file);
 	clang::SourceManager& sc_mgr = m_compiler.getSourceManager();
 	sc_mgr.setMainFileID(sc_mgr.createFileID(file, clang::SourceLocation(), clang::SrcMgr::C_User));	
@@ -179,7 +178,7 @@ void application::set_main_file_id()
 
 void application::parse_the_AST()
 {
-	writer w(m_option.get_output_file_name());
+	writer w(m_cmd_parser.get_output_file());
 	if (!w.ok()) {
 		throw std::runtime_error(w.error_message());
 	}
@@ -198,11 +197,11 @@ void application::parse_the_AST()
 
 int application::run()
 {
-	if (!m_option.is_valid()) {
+	if (!m_cmd_parser.is_valid()) {
 		return 1;
 	}
 	parse_the_AST();
-	massenger::print("Generated as reflected output: " + m_option.get_output_file_name());
+	massenger::print("Generated as reflected output: " + m_cmd_parser.get_output_file());
 	return 0;
 }
 ///@}
