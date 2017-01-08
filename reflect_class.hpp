@@ -23,6 +23,7 @@ public:
 	reflected_class(source_class* d)
 		: m_source_class(d)
 	{
+		ASSERT(d->isClass());
 	}
 
 	std::string get_name() const
@@ -350,7 +351,7 @@ private:
 		return res.substr(0, res.size() - comma.size()) + ");";
 	}
 
-	clang::AccessSpecifier get_accees_as_enum(std::string as) const
+	clang::AccessSpecifier get_accees_as_enum(const std::string& as) const
 	{
 		typedef std::map<std::string, clang::AccessSpecifier> AccessMap;
 		static AccessMap access_map;
@@ -358,9 +359,10 @@ private:
 			access_map.insert(std::make_pair("private", clang::AccessSpecifier::AS_private));
 			access_map.insert(std::make_pair("protected", clang::AccessSpecifier::AS_protected));
 			access_map.insert(std::make_pair("public", clang::AccessSpecifier::AS_public));
+			access_map.insert(std::make_pair("none", clang::AccessSpecifier::AS_none));
 		}
 		AccessMap::const_iterator i = access_map.find(as);
-		return access_map.end() != i ? i->second : clang::AccessSpecifier::AS_none;
+		return access_map.end() != i ? i->second : access_map["none"];
 	}
 
 	const std::string& get_accees_as_string(clang::AccessSpecifier as) const
@@ -371,9 +373,10 @@ private:
 			access_map.insert(std::make_pair(clang::AccessSpecifier::AS_private, "private"));
 			access_map.insert(std::make_pair(clang::AccessSpecifier::AS_protected, "protected"));
 			access_map.insert(std::make_pair(clang::AccessSpecifier::AS_public, "public"));
+			access_map.insert(std::make_pair(clang::AccessSpecifier::AS_none, "none"));
 		}
 		AccessMap::const_iterator i = access_map.find(as);
-		return access_map.end() != i ? i->second : "none";
+		return access_map.end() != i ? i->second : access_map[clang::AccessSpecifier::AS_none];
 	}
 
 private:
