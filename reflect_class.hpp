@@ -358,13 +358,12 @@ private:
 			access_map.insert(std::make_pair("private", clang::AccessSpecifier::AS_private));
 			access_map.insert(std::make_pair("protected", clang::AccessSpecifier::AS_protected));
 			access_map.insert(std::make_pair("public", clang::AccessSpecifier::AS_public));
-
 		}
 		AccessMap::const_iterator i = access_map.find(as);
 		return access_map.end() != i ? i->second : clang::AccessSpecifier::AS_none;
 	}
 
-	std::string get_accees_as_string(clang::AccessSpecifier as) const
+	const std::string& get_accees_as_string(clang::AccessSpecifier as) const
 	{
 		typedef std::map<clang::AccessSpecifier, std::string> AccessMap;
 		static AccessMap access_map;
@@ -372,7 +371,6 @@ private:
 			access_map.insert(std::make_pair(clang::AccessSpecifier::AS_private, "private"));
 			access_map.insert(std::make_pair(clang::AccessSpecifier::AS_protected, "protected"));
 			access_map.insert(std::make_pair(clang::AccessSpecifier::AS_public, "public"));
-
 		}
 		AccessMap::const_iterator i = access_map.find(as);
 		return access_map.end() != i ? i->second : "none";
