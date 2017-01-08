@@ -10,7 +10,7 @@ int main(int argc, char const **argv)
 	} catch(const std::exception& e) {
 		massenger::error(e.what()); 
 	} catch(...) {
-		massenger::error("Unhandled exception\n");
+		massenger::error("Unhandled exception");
 	}
 	return 1;
 }
