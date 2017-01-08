@@ -47,10 +47,17 @@ public:
 		return !m_input_file.empty();
 	}
 
+	static bool exist_file(const char* file_name)
+	{
+		static clang::FileSystemOptions fso;
+		clang::FileManager fm(fso);
+		return 0 != fm.getFile(file_name);
+	}
+
 private:
 	void parse()
 	{
-		if (m_arg_count != 2 ) {
+		if (2 != m_arg_count) {
 			massenger::print("Usage: " + usage());
 			return;
 		}
@@ -60,16 +67,6 @@ private:
 		}
 		m_input_file = m_arg_value[1];
 		m_output_file = m_input_file.substr(0, m_input_file.find('.')) + "_reflected.hpp";
-		if (exist_file(m_output_file.c_str())) {
-			massenger::worrning("The file with name '" + m_output_file + "'" + "rewrited");
-		}
-	}
-
-	bool exist_file(const char* file_name)
-	{
-		static clang::FileSystemOptions fso;
-		clang::FileManager fm(fso);
-		return 0 != fm.getFile(file_name);
 	}
 
 	std::string usage() const

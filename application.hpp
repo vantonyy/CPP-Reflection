@@ -32,37 +32,35 @@ namespace reflector {
 class writer
 {
 public:
-	explicit writer(const std::string& out_name)
-		: m_error_info()
-		, m_out_file(llvm::StringRef(out_name), m_error_info, llvm::sys::fs::F_Text)
+	explicit writer(const std::string& file_name)
+		: m_file_name(file_name)
 	{
+		if (cmd_parser::exist_file(m_file_name.c_str())) {
+			massenger::worrning("The file with name '" + m_file_name + "'" + "rewrited");
+		}
 	}
 
 	~writer()
 	{
-		m_out_file.close();
+		massenger::print("Generated as reflected output: " + m_file_name);
 	}
 
 	void write_reflected(const reflected_class::reflected_collection& reflected)
 	{
-		reflect_output out(m_out_file);
+		std::error_code error_info;
+		llvm::raw_fd_ostream out_file(llvm::StringRef(m_file_name), error_info, llvm::sys::fs::F_Text);
+		const std::error_code ok;
+		if (ok != error_info) {
+			out_file.close();
+			throw std::runtime_error(error_info.message());
+		}
+		reflect_output out(out_file);
 		out.dump(reflected);
+		out_file.close();
 	}
-
-	bool ok() const
-	{
-		static std::error_code non_error;
-		return non_error == m_error_info;
-	}
-
-	std::string error_message() const
-	{
-		return m_error_info.message();
-	}
-
 private:
-	std::error_code m_error_info;
-	llvm::raw_fd_ostream m_out_file;
+	const std::string& m_file_name;
+	
 }; // class writer
 ///@}
 
@@ -178,10 +176,6 @@ void application::set_main_file_id()
 
 void application::parse_the_AST()
 {
-	writer w(m_cmd_parser.get_output_file());
-	if (!w.ok()) {
-		throw std::runtime_error(w.error_message());
-	}
 	ASSERT(m_compiler.hasSourceManager());
 	clang::SourceManager& sc_mgr = m_compiler.getSourceManager();
 	ASSERT(m_compiler.hasPreprocessor());
@@ -192,7 +186,9 @@ void application::parse_the_AST()
 	reflector::consumer consumer(visitor);
 	ParseAST(preproc, &consumer, m_compiler.getASTContext(), false, clang::TU_Complete, 0, true);
 	m_compiler.getDiagnosticClient().EndSourceFile();
-	w.write_reflected(visitor.get_reflected_classes());
+	if (visitor.has_reflected_classes()) {
+		writer(m_cmd_parser.get_output_file()).write_reflected(visitor.get_reflected_classes());
+	}
 }
 
 int application::run()
@@ -201,7 +197,6 @@ int application::run()
 		return 1;
 	}
 	parse_the_AST();
-	massenger::print("Generated as reflected output: " + m_cmd_parser.get_output_file());
 	return 0;
 }
 ///@}
