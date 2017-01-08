@@ -1,23 +1,23 @@
-- Synopsis
+- Synopsis:
 
-- Documentation
+- Documentation:
 
-- Development
+- Development:
 
-- Motivation
+- Motivation:
 
-- Installation
+- Installation:
 
-- Usage
+- Usage:
 
-- Bug Reporting
+- Bug Reporting:
 
-- Tests
+- Tests:
 
-- Contributors
+- Contributors:
 
-- License
+- License:
   A short snippet describing the license (MIT)
 
-- Downloading
+- Downloading:
   https://github.com/vantonyy/SSreflect/archive/master.zip
