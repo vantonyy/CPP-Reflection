@@ -74,8 +74,7 @@ private:
 
 	std::string usage() const
 	{
-		static std::string u = std::string(m_arg_value[0]) + "  <source file>\n";
-		return u;
+		return std::string(m_arg_value[0]) + "  <input file>";
 	}
 
 private:
