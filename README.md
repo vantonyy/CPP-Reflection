@@ -1,5 +1,6 @@
 - Synopsis:
-
+  Reflection generator fot C++ programming language.
+  Lookup the classes in given source file and generate *_refelcted.hpp  file which contains  reflections of source classes.
 - Documentation:
 
 - Development:
@@ -9,7 +10,7 @@
 - Installation:
 
 - Usage:
-
+greflect <input file .cpp and.h/.hpp>
 - Bug Reporting:
 
 - Tests:
