@@ -94,6 +94,11 @@ public:
 		return m_source_class->isTemplateDecl();
 	}
 
+	bool is_polymorphic() const
+	{
+		return m_source_class->isPolymorphic();
+	}
+
 	int get_num_virtual_bases() const
 	{
 		return m_source_class->getNumVBases();
@@ -150,6 +155,7 @@ public:
 		dump_is_derived_from(out);
 		dump_is_template_decl(out);
 		dump_is_abstract(out);
+		dump_is_polymorphic(out);
 		dump_invoke(out);
 		dump_end_specalization(out);
 	}
@@ -243,6 +249,12 @@ private:
 	{
 		out << "\tbool is_abstract() const\n\t{\n";
 		out << "\t\treturn " << is_abstract() << ";\n\t}\n\n";
+	}
+
+	void dump_is_polymorphic(clang::raw_ostream& out) const
+	{
+		out << "\tbool is_polymorphic() const\n\t{\n";
+		out << "\t\treturn " << is_polymorphic() << ";\n\t}\n\n";
 	}
 
 	void dump_has_default_constructor(clang::raw_ostream& out) const
