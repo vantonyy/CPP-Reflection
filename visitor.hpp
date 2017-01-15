@@ -25,15 +25,28 @@ public:
 
 	virtual bool VisitCXXRecordDecl(clang::CXXRecordDecl* d)
 	{
-		if (d->isClass() && m_source_mgr.isInMainFile(d->getLocStart())) {
+		ASSERT(0 != d);
+		if (supported(d)) {
 			m_collection.push_back(reflected_class::ptr(new reflected_class(d)));
 		}
 		return true;
 	}
 	
+	bool has_reflected_classes() const
+	{
+		return !m_collection.empty();
+	}
+
 	const reflected_class::reflected_collection& get_reflected_classes() const
 	{
 		return m_collection;
+	}
+
+private:
+	bool supported(clang::CXXRecordDecl* d) const
+	{
+		ASSERT(0 != d);
+		return d->isClass() && d->hasDefinition() && m_source_mgr.isInMainFile(d->getLocStart());
 	}
 
 private:

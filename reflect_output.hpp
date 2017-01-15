@@ -24,8 +24,8 @@ public:
 		dump_comments();
 		dump_include_guards_begin();
 		dump_includes();
-		dump_details();
 		dump_reflect_manager(reflected);
+		dump_forward_delcaration(reflected);
 		dump_reflect_class(reflected);
 		dump_include_guards_end();
 	}
@@ -54,33 +54,12 @@ private:
 
 	void dump_includes()
 	{
+		m_out << "#include <exception>\n";
 		m_out << "#include <map>\n";
 		m_out << "#include <set>\n";
 		m_out << "#include <string>\n";
-		m_out << "#include <tuple>\n";
 		m_out << "#include <typeinfo>\n";
-		m_out << "#include <utility>\n";
 		m_out << "\n";
-	}
-
-	void dump_details()
-	{
-		m_out << "namespace detail {\n\n";
-		m_out << "template <size_t N>\n";
-		m_out << "struct lookup_impl\n{\n";
-		m_out << "\ttemplate <typename T>\n";
-		m_out << "\tstatic auto lookup(T&& t, size_t n)\n\t{\n";
-		m_out << "\t\tif (N - 1 == n) {\n";
-		m_out << "\t\t\treturn std::get<N - 1>(std::forward<T>(t));\n\t\t}\n";
-		m_out << "\t\tlookup_impl<N - 1>::lookup(std::forward<T>(t), n);\n\t}\n};\n\n";
-		m_out << "template <>\nstruct lookup_impl<0>\n{\n";
-		m_out << "\ttemplate <typename T>\n";
-		m_out << "\tstatic void lookup(T, size_t)\n\t{\n";
-		m_out << "\t\t//assert(\"Tuple index out of range\" && false);\n\t}\n};\n\n";
-		m_out << "template <typename... Ts>\n";
-		m_out << "auto lookup_function(std::tuple<Ts...>& t, size_t idx)\n{\n";
-		m_out << "\treturn lookup_impl<sizeof...(Ts)>::lookup(std::move(t), idx);\n}\n\n";
-		m_out << "} // namespace detail\n\n";
 	}
 
 	void dump_reflect_class_as_template()
@@ -93,6 +72,15 @@ private:
 		m_out << "\treflect(const reflect&);\n\n";
 		m_out << "\treflect& operator =(const reflect&);\n\n\n";
 		m_out << "}; // template class reflect \n\n";
+	}
+
+	void dump_forward_delcaration(const reflected_class::reflected_collection& reflected)
+	{
+		m_out << "// forward declatation\n";
+		for (auto i : reflected) {
+			m_out << "class " << i->get_name() << ";\n";
+		}
+		m_out << "\n";
 	}
 
 	void dump_reflect_class(const reflected_class::reflected_collection& reflected)

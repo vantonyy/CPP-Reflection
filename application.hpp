@@ -34,15 +34,8 @@ class writer
 public:
 	explicit writer(const std::string& file_name)
 		: m_file_name(file_name)
+		, m_do(cmd_parser::exist_file(file_name.c_str()) ? "Rewrited" : "Generated")
 	{
-		if (cmd_parser::exist_file(m_file_name.c_str())) {
-			massenger::worrning("The file with name '" + m_file_name + "'" + "rewrited");
-		}
-	}
-
-	~writer()
-	{
-		massenger::print("Generated as reflected output: " + m_file_name);
 	}
 
 	void write_reflected(const reflected_class::reflected_collection& reflected)
@@ -57,9 +50,11 @@ public:
 		reflect_output out(out_file);
 		out.dump(reflected);
 		out_file.close();
+		massenger::print(m_do + " reflection output: " + m_file_name);
 	}
 private:
 	const std::string& m_file_name;
+	std::string m_do;
 	
 }; // class writer
 ///@}
@@ -132,12 +127,7 @@ void application::initialize_compiler()
 void application::set_header_search_options()
 {
 	clang::HeaderSearchOptions &h = m_compiler.getHeaderSearchOpts();
-	h.AddPath("/usr/include/c++/4.6", clang::frontend::Angled, false, false);
-	h.AddPath("/usr/include/c++/4.6/i686-linux-gnu", clang::frontend::Angled, false, false);
-	h.AddPath("/usr/include/c++/4.6/backward", clang::frontend::Angled, false, false);
 	h.AddPath("/usr/local/include", clang::frontend::Angled, false, false);
-	h.AddPath("/usr/local/lib/clang/3.3/include", clang::frontend::Angled, false, false);
-	h.AddPath("/usr/include/i386-linux-gnu", clang::frontend::Angled, false, false);
 	h.AddPath("/usr/include", clang::frontend::Angled, false, false);
 }
 
@@ -180,13 +170,14 @@ void application::parse_the_AST()
 	clang::SourceManager& sc_mgr = m_compiler.getSourceManager();
 	ASSERT(m_compiler.hasPreprocessor());
 	clang::Preprocessor& preproc = m_compiler.getPreprocessor();
+	preproc.getDiagnostics().setSuppressAllDiagnostics(true);
 	m_compiler.getDiagnosticClient().BeginSourceFile(m_compiler.getLangOpts(), &preproc);
 	ASSERT(m_compiler.hasASTContext());
 	reflector::visitor visitor(sc_mgr);
 	reflector::consumer consumer(visitor);
 	ParseAST(preproc, &consumer, m_compiler.getASTContext(), false, clang::TU_Complete, 0, true);
 	m_compiler.getDiagnosticClient().EndSourceFile();
-	if (visitor.has_reflected_classes()) {
+	if (visitor.has_reflected_classes() ) {
 		writer(m_cmd_parser.get_output_file()).write_reflected(visitor.get_reflected_classes());
 	}
 }

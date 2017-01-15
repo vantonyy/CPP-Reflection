@@ -19,7 +19,7 @@ public:
 
 	static void print(const char* ms)
 	{
-		std::cout << ms << std::endl;
+		std::cout << "Information: " << ms << std::endl;
 	}
 
 	static void error(const std::string& ms)
