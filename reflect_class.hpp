@@ -57,8 +57,8 @@ public:
 	explicit method_info(method* m)
 		: m_method(m)
 		, m_return_type(extract_return_type())
-		, m_params(exctrat_param_list())
-		, m_variables(extract_variable_list())
+		, m_param_types(exctrat_param_type_list())
+		, m_arguments(extract_argument_list())
 		, m_signature(extract_signature())
 		
 	{
@@ -75,14 +75,14 @@ public:
 		return m_signature;
 	}
 
-	const std::string& get_params_list() const
+	const std::string& get_param_type_list() const
 	{
-		return m_params;
+		return m_param_types;
 	}
 
-	const std::string& get_variable_list() const
+	const std::string& get_argument_list() const
 	{
-		return m_variables;
+		return m_arguments;
 	}
 
 	const std::string& get_return_type() const
@@ -107,7 +107,7 @@ public:
 		return 0 < get_params_count();
 	}
 
-	bool has_return_type() const
+	bool non_void_return_type() const
 	{
 		return m_return_type != "void";
 	}
@@ -138,7 +138,7 @@ private:
 		return res;
 	}
 
-	std::string exctrat_param_list() const
+	std::string exctrat_param_type_list() const
 	{
 		ASSERT(0 != m_method);
 		std::string res;
@@ -155,7 +155,7 @@ private:
 		return res;
 	}
 
-	std::string extract_variable_list() const
+	std::string extract_argument_list() const
 	{
 		ASSERT(0 != m_method);
 		std::string res;
@@ -171,8 +171,8 @@ private:
 private:
 	method* m_method;
 	std::string m_return_type;
-	std::string m_params;
-	std::string m_variables;
+	std::string m_param_types;
+	std::string m_arguments;
 	std::string m_signature;
 	
 }; // class method_info
@@ -235,7 +235,7 @@ private:
 		std::string const_qual = info.is_const() ? "const " : "";
 		out << "\t" << info.get_return_type() << " invok(" << const_qual << "Type & o, const char * n";
 		if (info.has_param()) {
-			out << ", " + info.get_params_list();
+			out << ", " + info.get_param_type_list();
 		}
 		out << ") " << const_qual << "\n\t{\n";
 		out << "\t\ttypedef " << info.get_signture() << ";\n";
@@ -249,10 +249,10 @@ private:
 		out << "\t\tif(found == f_map.end()) {\n";
 		out << "\t\t\tthrow std::runtime_error(\"Incorect func name\");\n\t\t}\n";
 		out << "\t\t";
-		if (info.has_return_type()) {
+		if (info.non_void_return_type()) {
 			out << "return ";
 		}
-		out << "(o.*found->second)(" << info.get_variable_list() <<  ");\n\t}\n\n";
+		out << "(o.*found->second)(" << info.get_argument_list() <<  ");\n\t}\n\n";
 	}
 
 private:
