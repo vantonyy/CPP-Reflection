@@ -8,7 +8,6 @@ LLVMLDFLAGS := $(shell $(LLVMCONFIG) --ldflags --libs $(LLVMCOMPONENTS)) -o gref
 
 SOURCES = main.cpp\
 
-
 OBJECTS = $(SOURCES:.cpp=.o)
 EXES = $(OBJECTS:.o=)
 CLANGLIBS = \

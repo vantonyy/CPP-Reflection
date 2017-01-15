@@ -2,6 +2,7 @@
 #define VISITOR_HPP
 
 #include "debug.hpp"
+#include "messenger.hpp"
 #include "reflect_class.hpp"
 
 #include <clang/AST/ASTConsumer.h>
@@ -32,9 +33,9 @@ public:
 		return true;
 	}
 	
-	bool has_reflected_classes() const
+	unsigned get_reflected_class_count() const
 	{
-		return !m_collection.empty();
+		return m_collection.size();
 	}
 
 	const reflected_class::reflected_collection& get_reflected_classes() const
@@ -46,7 +47,20 @@ private:
 	bool supported(clang::CXXRecordDecl* d) const
 	{
 		ASSERT(0 != d);
-		return d->isClass() && d->hasDefinition() && m_source_mgr.isInMainFile(d->getLocStart());
+		if (!d->isClass() || !m_source_mgr.isInMainFile(d->getLocStart())) {
+			return false;
+		}
+		if (!d->hasDefinition()) {
+			massenger::print("Skip reflection of class '" 
+				+ d->getNameAsString() + "', becouse has not definition in given file.");
+			return false;
+		}
+		if (0 != d->getDescribedClassTemplate()) {
+			massenger::print("Skip reflection of class '" + d->getNameAsString()
+								+ "', becouse it described template.");
+			return false;
+		}
+		return true;
 	}
 
 private:

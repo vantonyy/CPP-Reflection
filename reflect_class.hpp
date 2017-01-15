@@ -56,10 +56,11 @@ public:
 public:
 	explicit method_info(method* m)
 		: m_method(m)
-		, m_signature(extract_signature())
+		, m_return_type(extract_return_type())
 		, m_params(exctrat_param_list())
 		, m_variables(extract_variable_list())
-		, m_return_type(extract_return_type())
+		, m_signature(extract_signature())
+		
 	{
 	}
 
@@ -114,7 +115,7 @@ private:
 	std::string extract_signature() const
 	{
 		ASSERT(0 != m_method);
-		std::string res = get_return_type() + " (*" + get_def() + ")(";
+		std::string res = get_return_type() + " (Type::*" + get_def() + ")(";
 		method::param_const_iterator b = m_method->param_begin();
 		method::param_const_iterator e = m_method->param_end();
 		while ( b != e ) {
@@ -169,10 +170,11 @@ private:
 	}
 private:
 	method* m_method;
-	std::string m_signature;
+	std::string m_return_type;
 	std::string m_params;
 	std::string m_variables;
-	std::string m_return_type;
+	std::string m_signature;
+	
 }; // class method_info
 
 //@class invok_output
@@ -214,17 +216,17 @@ private:
 		for (clang::CXXRecordDecl::method_iterator i = r.begin(); i != r.end(); ++i) {
 			method* m = *i;
 			ASSERT(0 != m);
-			if (!need_skip(m)) {
+			if (supported(m)) {
 				m_methods_map[method_info(m)].insert(m->getNameAsString());
 			}
 		}
 	}
 
-	bool need_skip(method* i) const
+	bool supported(method* m) const
 	{
-		return i->isStatic() || !i->isUserProvided() || i->isCopyAssignmentOperator()  ||
-			i->isMoveAssignmentOperator() || i->isDefaulted() ||
-			i->getKind() == i->CXXDestructor || i->getKind() == i->CXXConstructor;
+		return !m->isStatic() && m->isUserProvided() && clang::Decl::Kind::CXXMethod == m->getKind() &&
+	                m->getAccess() == clang::AccessSpecifier::AS_public && !m->isDefaulted() &&
+	               !m->isCopyAssignmentOperator() && !m->isMoveAssignmentOperator();
 	}
 
 	void dump(clang::raw_ostream& out, const method_info& info, const method_names& names) const
@@ -250,7 +252,7 @@ private:
 		if (info.has_return_type()) {
 			out << "return ";
 		}
-		out << "(o.*(found->second)(n))(" << info.get_variable_list() <<  ");\n\t}\n\n";
+		out << "(o.*(found->second))(" << info.get_variable_list() <<  ");\n\t}\n\n";
 	}
 
 private:
@@ -270,15 +272,18 @@ public:
 		: m_source_class(d)
 		, m_methods(d->methods())
 	{
-		
 		ASSERT(d->isClass());
 		ASSERT(d->hasDefinition()); 
 	}
 
-	const std::string& get_name() const
+	std::string get_qualified_name() const
 	{
-		static std::string n = m_source_class->getNameAsString();
-		return n;
+		return m_source_class->getQualifiedNameAsString();
+	}
+
+	std::string get_name() const
+	{
+		return m_source_class->getNameAsString();
 	}
 
 	int get_num_bases() const
@@ -369,6 +374,7 @@ public:
 		dump_begin_specalization(out);
 		dump_create(out);
 		dump_get_name(out);
+		dump_get_qualified_name(out);
 		dump_get_base_names(out);
 		dump_get_num_bases(out);
 		dump_get_num_virtual_bases(out);
@@ -392,7 +398,7 @@ public:
 private:
 	void dump_begin_specalization(clang::raw_ostream& out) const 
 	{
-		std::string name = get_name();
+		std::string name = get_qualified_name();
 		out << "// @class reflect<" << name << ">\n";
 		out << "template <>\nclass reflect<" << name << ">\n{\n";
 		out << "public:\n\ttypedef " << name << " Type;\n";
@@ -407,8 +413,14 @@ private:
 
 	void dump_get_name(clang::raw_ostream& out) const 
 	{
-		out << "\tconst std::string& get_name() const\n\t{\n";
+		out << "\tstd::string get_name() const\n\t{\n";
 		out << "\t\treturn \"" << get_name() << "\";\t\n\t}\n\n";
+	}
+
+	void dump_get_qualified_name(clang::raw_ostream& out) const
+	{
+		out << "\tstd::string get_qualified_name() const\n\t{\n";
+		out << "\t\treturn \"" << get_qualified_name() << "\";\t\n\t}\n\n";
 	}
 
 	void dump_get_num_bases(clang::raw_ostream& out) const 
@@ -517,7 +529,7 @@ private:
 
 	void dump_is_derived_from(clang::raw_ostream& out) const
 	{
-		out << "\tbool is_derived_from(const std::strin& base_name) const\n\t{\n";
+		out << "\tbool is_derived_from(const std::string& base_name) const\n\t{\n";
 		out << "\t\tnames ns;\n";
 		out << "\t\tget_base_names(ns);\n";
 		out << "\t\treturn ns.find(\"class \" + base_name) != ns.end();\n\t}\n\n";
