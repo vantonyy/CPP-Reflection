@@ -252,7 +252,7 @@ private:
 		if (info.has_return_type()) {
 			out << "return ";
 		}
-		out << "(o.*(found->second))(" << info.get_variable_list() <<  ");\n\t}\n\n";
+		out << "(o.*found->second)(" << info.get_variable_list() <<  ");\n\t}\n\n";
 	}
 
 private:
