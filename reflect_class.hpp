@@ -64,7 +64,7 @@ public:
 	{
 	}
 
-	static const std::string get_def()
+	static const std::string get_type_def()
 	{
 		static std::string d = "InvFuncType";
 		return d;
@@ -115,7 +115,7 @@ private:
 	std::string extract_signature() const
 	{
 		ASSERT(0 != m_method);
-		std::string res = get_return_type() + " (Type::*" + get_def() + ")(";
+		std::string res = get_return_type() + " (Type::*" + get_type_def() + ")(";
 		method::param_const_iterator b = m_method->param_begin();
 		method::param_const_iterator e = m_method->param_end();
 		while ( b != e ) {
@@ -232,14 +232,14 @@ private:
 	void dump(clang::raw_ostream& out, const method_info& info, const method_names& names) const
 	{
 		ASSERT(!names.empty());
-		std::string const_qual = info.is_const() ? "const " : "";
-		out << "\t" << info.get_return_type() << " invok(" << const_qual << "Type & o, const char * n";
+		std::string const_qualifier = info.is_const() ? "const " : "";
+		out << "\t" << info.get_return_type() << " invok(" << const_qualifier << "Type & o, const char * n";
 		if (info.has_param()) {
 			out << ", " + info.get_param_type_list();
 		}
-		out << ") " << const_qual << "\n\t{\n";
+		out << ") " << const_qualifier << "\n\t{\n";
 		out << "\t\ttypedef " << info.get_signture() << ";\n";
-		out << "\t\ttypedef std::map<std::string, " << method_info::get_def() << "> funcMap;\n";
+		out << "\t\ttypedef std::map<std::string, " << method_info::get_type_def() << "> funcMap;\n";
 		out << "\t\tstatic funcMap f_map;\n";
 		out << "\t\tif (f_map.empty()) {\n";
 		for (auto i : names) {
@@ -247,7 +247,7 @@ private:
 		}
 		out << "\t\t}\n\t\tfuncMap::const_iterator found = f_map.find(n);\n";
 		out << "\t\tif(found == f_map.end()) {\n";
-		out << "\t\t\tthrow std::runtime_error(\"Incorect func name\");\n\t\t}\n";
+		out << "\t\t\tthrow std::runtime_error(\"Function with name '\" + std::string(n) + \"' not found\");\n\t\t}\n";
 		out << "\t\t";
 		if (info.non_void_return_type()) {
 			out << "return ";
@@ -438,7 +438,7 @@ private:
 	void dump_get_methods(clang::raw_ostream& out) const
 	{
 		out << "\tvoid get_methods(names& ns) const\n\t{\n";
-		std::set<std::string> names;
+		method_info::method_names names;
 		m_methods.get_methods(names);
 		for (auto i : names ) {
 			out << "\t\tns.insert(\"" << i << "\");\n";
@@ -477,7 +477,7 @@ private:
 		source_class::base_class_iterator b = m_source_class->bases_begin();
 		source_class::base_class_iterator e = m_source_class->bases_end();
 		if (b == e) {
-			out << "\t\t///Note: Has not any base class\n";
+			out << "\t\t/// Has not base\n";
 		}
 		for (; b != e; ++b) {
 			out << "\t\tns.insert(\"" << b->getType().getAsString() << "\");\n";
