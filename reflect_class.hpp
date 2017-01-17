@@ -177,8 +177,8 @@ private:
 	
 }; // class method_info
 
-//@class invok_output
-class invok_output
+//@class invoke_output
+class invoke_output
 {
 private:
 	typedef method_info::method method;
@@ -251,13 +251,13 @@ private:
 		out << "\t\t";
 		if (info.non_void_return_type()) {
 			out << "return ";
-		} // TODO forward
+		} //@TODO: arguments should be pass via std::forward<typeName>(p[1-9]), ...
 		out << "(o.*found->second)(" << info.get_argument_list() <<  ");\n\t}\n\n";
 	}
 
 private:
 	methods_map m_methods_map;
-}; // class invok_output
+}; // class invoke_output
 
 //@class reflected_class
 class reflected_class
