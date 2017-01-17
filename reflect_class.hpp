@@ -233,11 +233,11 @@ private:
 	{
 		ASSERT(!names.empty());
 		std::string const_qualifier = info.is_const() ? "const " : "";
-		out << "\t" << info.get_return_type() << " invok(" << const_qualifier << "Type & o, const char * n";
+		out << "\tstatic " << info.get_return_type() << " invoke(" << const_qualifier << "Type & o, const char * n";
 		if (info.has_param()) {
 			out << ", " + info.get_param_type_list();
 		}
-		out << ") " << const_qualifier << "\n\t{\n";
+		out << ") " << "\n\t{\n";
 		out << "\t\ttypedef " << info.get_signture() << ";\n";
 		out << "\t\ttypedef std::map<std::string, " << method_info::get_type_def() << "> funcMap;\n";
 		out << "\t\tstatic funcMap f_map;\n";
@@ -251,7 +251,7 @@ private:
 		out << "\t\t";
 		if (info.non_void_return_type()) {
 			out << "return ";
-		}
+		} // TODO forward
 		out << "(o.*found->second)(" << info.get_argument_list() <<  ");\n\t}\n\n";
 	}
 
