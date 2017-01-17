@@ -9,9 +9,6 @@
 
 #include <clang/Frontend/CompilerInstance.h>
 #include <clang/Lex/Preprocessor.h>
-
-///@{
-//Should be move to application.cpp
 #include <clang/Basic/Diagnostic.h>
 #include <clang/Basic/FileManager.h>
 #include <clang/Basic/LangOptions.h>
@@ -20,21 +17,18 @@
 #include <clang/Basic/TargetOptions.h>
 #include <clang/Parse/ParseAST.h>
 #include <llvm/Support/raw_ostream.h>
-///}@
 
 #include <string>
 
 namespace reflector {
 
-///@{
-//Should be move to application.cpp
 // @class writer
 class writer
 {
 public:
 	explicit writer(const std::string& file_name)
 		: m_file_name(file_name)
-		, m_do(cmd_parser::exist_file(file_name.c_str()) ? "Rewrited" : "Generated")
+		, m_do(cmd_parser::exist_file(file_name.c_str()) ? "Rewrite" : "Generate")
 	{
 	}
 
@@ -50,14 +44,13 @@ public:
 		reflect_output out(out_file);
 		out.dump(reflected);
 		out_file.close();
-		massenger::print(m_do + " reflection output: " + m_file_name);
+		massenger::print(m_do + " reflection to " + m_file_name);
 	}
 private:
 	const std::string& m_file_name;
 	std::string m_do;
 	
 }; // class writer
-///@}
 
 // @class application
 class application
@@ -88,8 +81,6 @@ private:
 	cmd_parser m_cmd_parser;
 }; // class application
 
-///@{
-//Should be move to application.cpp
 application::application(int c, char const **v)
 	: m_cmd_parser(c, v)
 {
@@ -190,7 +181,6 @@ int application::run()
 	parse_the_AST();
 	return 0;
 }
-///@}
 
 } // namespace reflector
 

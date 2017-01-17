@@ -48,9 +48,9 @@ public:
 		bool operator ()(const method_info& i1, const method_info& i2) const
 		{
 			if (i1.get_params_count() == i2.get_params_count()) {
-				const std::string& s1 = i1.get_signture();
-				const std::string& s2 = i2.get_signture();
-				return i1.is_const() < i2.is_const() || s1.size() < s2.size() || s1 < s2;
+				const std::string& k1 = i1.get_key();
+				const std::string& k2 = i2.get_key();
+				return i1.is_const() < i2.is_const() || k1.size() < k2.size() || k1 < k2;
 			}
 			return i1.get_params_count() < i2.get_params_count();
 		}
@@ -75,6 +75,11 @@ public:
 	}
 
 	const std::string& get_signture() const
+	{
+		return m_signature;
+	}
+
+	const std::string& get_key() const
 	{
 		return m_signature;
 	}
@@ -179,6 +184,21 @@ private:
 		return res;
 	}
 
+	//@TODO implement
+	//void keep_code_stile(std::string& str, unsigned count) const
+	//{
+	//	if (0 == count) {
+	//		return;
+	//	}
+	//	std::string::size_type pos = count;
+	//	std::string tab = "\n\t\t\t\t";
+	//	while (str.size() > pos && (pos = str.find(',', pos)) != std::string::npos) {
+	//		str.insert(pos + 1, tab);
+	//		pos += count - (tab.size() / 2 - 3) * (count / 10);
+	//		tab += "\t";
+	//	}
+	//}
+
 private:
 	method* m_method;
 	std::string m_return_type;
@@ -262,7 +282,7 @@ private:
 		out << "\t\t";
 		if (info.non_void_return_type()) {
 			out << "return ";
-		} // TODO forward
+		}
 		out << "(o.*found->second)(" << info.get_forward_arguments() <<  ");\n\t}\n\n";
 	}
 
@@ -424,31 +444,31 @@ private:
 
 	void dump_get_name(clang::raw_ostream& out) const 
 	{
-		out << "\tstd::string get_name() const\n\t{\n";
+		out << "\tstatic std::string get_name()\n\t{\n";
 		out << "\t\treturn \"" << get_name() << "\";\t\n\t}\n\n";
 	}
 
 	void dump_get_qualified_name(clang::raw_ostream& out) const
 	{
-		out << "\tstd::string get_qualified_name() const\n\t{\n";
+		out << "\tstatic std::string get_qualified_name()\n\t{\n";
 		out << "\t\treturn \"" << get_qualified_name() << "\";\t\n\t}\n\n";
 	}
 
 	void dump_get_num_bases(clang::raw_ostream& out) const 
 	{
-		out << "\tint get_num_bases() const\n\t{\n";
+		out << "\tstatic int get_num_bases()\n\t{\n";
 		out << "\t\treturn " << get_num_bases() << ";\n\t}\n\n";
 	}
 
 	void dump_get_num_virtual_bases(clang::raw_ostream& out) const 
 	{
-		out << "\tint get_num_virtual_bases() const\n\t{\n";
+		out << "\tstatic int get_num_virtual_bases()\n\t{\n";
 		out << "\t\treturn " << get_num_virtual_bases() << ";\n\t}\n\n";
 	}
 
 	void dump_get_methods(clang::raw_ostream& out) const
 	{
-		out << "\tvoid get_methods(names& ns) const\n\t{\n";
+		out << "\tstatic void get_methods(names& ns)\n\t{\n";
 		method_info::method_names names;
 		m_methods.get_methods(names);
 		for (auto i : names ) {
@@ -459,32 +479,32 @@ private:
 
 	void dump_is_abstract(clang::raw_ostream& out) const
 	{
-		out << "\tbool is_abstract() const\n\t{\n";
+		out << "\tstatic bool is_abstract()\n\t{\n";
 		out << "\t\treturn " << (is_abstract() ? "true" : "false") << ";\n\t}\n\n";
 	}
 
 	void dump_is_polymorphic(clang::raw_ostream& out) const
 	{
-		out << "\tbool is_polymorphic() const\n\t{\n";
+		out << "\tstatic bool is_polymorphic()\n\t{\n";
 		out << "\t\treturn " << (is_polymorphic() ? "true" : "false") << ";\n\t}\n\n";
 	}
 
 	void dump_has_default_constructor(clang::raw_ostream& out) const
 	{
-		out << "\tbool has_default_constructor() const\n\t{\n";
+		out << "\tstatic bool has_default_constructor()\n\t{\n";
 		out << "\t\treturn "<< (has_default_constructor() ? "true" : "false") << ";\n\t}\n\n";
 	}
 
 	void dump_create(clang::raw_ostream& out) const 
 	{
 		out << "\ttemplate<typename ...Args>\n";
-		out << "\tType create(const Args&...args)\n\t{\n";
+		out << "\tstatic Type create(const Args&...args)\n\t{\n";
 		out << "\t\treturn Type(std::forward<const Args&>(args)...);\n\t}\n\n";
 	}
 
 	void dump_get_base_names(clang::raw_ostream& out) const 
 	{
-		out << "\tvoid get_base_names(names& ns) const\n\t{\n";
+		out << "\tstatic void get_base_names(names& ns)\n\t{\n";
 		source_class::base_class_iterator b = m_source_class->bases_begin();
 		source_class::base_class_iterator e = m_source_class->bases_end();
 		if (b == e) {
@@ -498,49 +518,49 @@ private:
 
 	void dump_has_any_dependent_bases(clang::raw_ostream& out) const
 	{
-		out << "\tbool dump_has_any_dependent_bases() const\n\t{\n";
+		out << "\tstatic bool dump_has_any_dependent_bases()\n\t{\n";
 		out << "\t\treturn " << (has_any_dependent_bases() ? "true" : "false") << ";\n\t}\n\n";
 	}
 
 	void dump_has_friends(clang::raw_ostream& out) const
 	{
-		out << "\tbool has_friends() const\n\t{\n";
+		out << "\tstatic bool has_friends()\n\t{\n";
 		out << "\t\treturn " << (has_friends() ? "true" : "false") << ";\n\t}\n\n";
 	}
 
 	void dump_has_user_declared_constructor(clang::raw_ostream& out) const
 	{
-		out << "\tbool has_user_declared_constructor() const\n\t{\n";
+		out << "\tstatic bool has_user_declared_constructor()\n\t{\n";
 		out << "\t\treturn " << (has_user_declared_constructor() ? "true" : "false") << ";\n\t}\n\n";
 	}
 
 	void dump_has_user_declared_copy_assignment(clang::raw_ostream& out) const
 	{
-		out << "\tbool has_user_declared_copy_assignment() const\n\t{\n";
+		out << "\tstatic bool has_user_declared_copy_assignment()\n\t{\n";
 		out << "\t\treturn " << (has_user_declared_copy_assignment() ? "true" : "false") << ";\n\t}\n\n";
 	}
 
 	void dump_has_user_declared_destructor(clang::raw_ostream& out) const
 	{
-		out << "\tbool has_user_declared_destructor() const\n\t{\n";
+		out << "\tstatic bool has_user_declared_destructor()\n\t{\n";
 		out << "\t\treturn " << (has_user_declared_destructor() ? "true" : "false") << ";\n\t}\n\n";
 	}
 
 	void dump_has_user_provided_default_constructor(clang::raw_ostream& out) const
 	{
-		out << "\tbool has_user_provided_default_constructor() const\n\t{\n";
+		out << "\tstatic bool has_user_provided_default_constructor()\n\t{\n";
 		out << "\t\treturn " << (has_user_provided_default_constructor() ? "true" : "false") << ";\n\t}\n\n";
 	}
 
 	void dump_is_aggregate(clang::raw_ostream& out) const
 	{
-		out << "\tbool is_aggregate() const\n\t{\n";
+		out << "\tstatic bool is_aggregate()\n\t{\n";
 		out << "\t\treturn " << (is_aggregate() ? "true" : "false") << ";\n\t}\n\n";
 	}
 
 	void dump_is_derived_from(clang::raw_ostream& out) const
 	{
-		out << "\tbool is_derived_from(const std::string& base_name) const\n\t{\n";
+		out << "\tstatic bool is_derived_from(const std::string& base_name)\n\t{\n";
 		out << "\t\tnames ns;\n";
 		out << "\t\tget_base_names(ns);\n";
 		out << "\t\treturn ns.find(\"class \" + base_name) != ns.end();\n\t}\n\n";
@@ -548,7 +568,7 @@ private:
 
 	void dump_is_template_decl(clang::raw_ostream& out) const
 	{
-		out << "\tbool is_template_decl() const\n\t{\n";
+		out << "\tstatic bool is_template_decl()\n\t{\n";
 		out << "\t\treturn " << (is_template_decl() ? "true" : "false") << ";\n\t}\n\n";
 	}
 
