@@ -268,7 +268,7 @@ private:
 		out << "\t\t";
 		if (info.non_void_return_type()) {
 			out << "return ";
-		} // TODO forward
+		}
 		out << "(o.*found->second)(" << info.get_argument_list() <<  ");\n\t}\n\n";
 	}
 
