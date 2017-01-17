@@ -33,9 +33,9 @@ public:
 		return true;
 	}
 	
-	unsigned get_reflected_class_count() const
+	bool has_reflected_class() const
 	{
-		return m_collection.size();
+		return !m_collection.empty();
 	}
 
 	const reflected_class::reflected_collection& get_reflected_classes() const

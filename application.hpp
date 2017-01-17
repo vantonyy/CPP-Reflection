@@ -177,10 +177,9 @@ void application::parse_the_AST()
 	reflector::consumer consumer(visitor);
 	ParseAST(preproc, &consumer, m_compiler.getASTContext(), false, clang::TU_Complete, 0, true);
 	m_compiler.getDiagnosticClient().EndSourceFile();
-	if (0 != visitor.get_reflected_class_count()) {
+	if (visitor.has_reflected_class()) {
 		writer(m_cmd_parser.get_output_file()).write_reflected(visitor.get_reflected_classes());
 	}
-	massenger::print("Count of reflected class is " + std::to_string(visitor.get_reflected_class_count()) + ".");
 }
 
 int application::run()

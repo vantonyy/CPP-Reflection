@@ -50,7 +50,7 @@ public:
 			if (i1.get_params_count() == i2.get_params_count()) {
 				const std::string& s1 = i1.get_signture();
 				const std::string& s2 = i2.get_signture();
-				return s1.size() < s2.size() || s1 < s2;
+				return i1.is_const() < i2.is_const() || s1.size() < s2.size() || s1 < s2;
 			}
 			return i1.get_params_count() < i2.get_params_count();
 		}
@@ -63,16 +63,15 @@ public:
 		: m_method(m)
 		, m_return_type(extract_return_type())
 		, m_param_types(exctrat_param_type_list())
-		, m_arguments(extract_argument_list())
+		, m_forward_arguments(extract_forward_arguments())
 		, m_signature(extract_signature())
-		
 	{
 	}
 
 	static const std::string get_type_def()
 	{
-		static std::string d = "InvFuncType";
-		return d;
+		static std::string def = "FuncPtrToClassMethod";
+		return def;
 	}
 
 	const std::string& get_signture() const
@@ -85,9 +84,9 @@ public:
 		return m_param_types;
 	}
 
-	const std::string& get_argument_list() const
+	const std::string& get_forward_arguments() const
 	{
-		return m_arguments;
+		return m_forward_arguments;
 	}
 
 	const std::string& get_return_type() const
@@ -125,8 +124,8 @@ private:
 		method::param_const_iterator e = m_method->param_end();
 		while ( b != e ) {
 			ASSERT(0 != *b);
-			res += (*b++)->getType().getAsString();
-			if (b != e) {
+			res += (*b)->getType().getAsString();
+			if (++b != e) {
 				res += ", ";
 			}
 		}
@@ -151,8 +150,8 @@ private:
 		method::param_const_iterator e = m_method->param_end();
 		unsigned idx = 0;
 		while (b != e) {
-			res += (*b++)->getType().getAsString() + " p" + std::to_string(++idx);
-			if (b != e) {
+			res += (*b)->getType().getAsString() + " p" + std::to_string(++idx);
+			if (++b != e) {
 				res += ", ";
 			}
 		}
@@ -160,7 +159,7 @@ private:
 		return res;
 	}
 
-	std::string extract_argument_list() const
+	std::string extract_forward_arguments() const
 	{
 		typedef std::vector<std::string> Strings;
 		Strings params;
@@ -169,27 +168,22 @@ private:
 		Strings::const_iterator b = params.begin();
 		Strings::const_iterator e = params.end();
 		while( b != e ) {
-			res += make_forward(*b++);
-			if (b != e) {
+			std::string::const_reverse_iterator i = std::find(b->rbegin(), b->rend(), ' ');
+			ASSERT(i != b->rend());
+			const unsigned pos = b->rend() - i;
+			res += "std::forward<" + b->substr(0, pos - 1) + ">(" + b->substr(pos, b->size()) + ")";
+			if (++b != e) {
 				res += ", ";
 			}
 		}
 		return res;
 	}
 
-	std::string make_forward(const std::string& str) const
-	{
-		std::string::const_reverse_iterator i = std::find(str.rbegin(), str.rend(), ' ');
-		ASSERT(i != str.rend());
-		const unsigned pos = str.rend() - i;
-		return "std::forward<" + str.substr(0, pos - 1) + ">(" + str.substr(pos, str.size()) + ")";
-	}
-
 private:
 	method* m_method;
 	std::string m_return_type;
 	std::string m_param_types;
-	std::string m_arguments;
+	std::string m_forward_arguments;
 	std::string m_signature;
 	
 }; // class method_info
@@ -268,8 +262,8 @@ private:
 		out << "\t\t";
 		if (info.non_void_return_type()) {
 			out << "return ";
-		}
-		out << "(o.*found->second)(" << info.get_argument_list() <<  ");\n\t}\n\n";
+		} // TODO forward
+		out << "(o.*found->second)(" << info.get_forward_arguments() <<  ");\n\t}\n\n";
 	}
 
 private:
