@@ -97,10 +97,13 @@ private:
 		m_out << "public:\n\ttemplate <typename T>\n";
 		m_out << "\tstatic bool is_reflected(const T& o)\n\t{\n";
 		m_out << "\t\tstatic std::set<std::string> reflected_classes;\n";
+		m_out << "\t\t// @note: The additional names for support VC++\n";
 		m_out << "\t\tif (reflected_classes.empty()) {\n";
 		for (auto i : reflected) {
 			std::string name = i->get_name();
-			m_out << "\t\t\treflected_classes.insert(\"" << utils::to_string(name.size()) + name << "\");\n";
+			m_out << "\t\t\treflected_classes.insert(\"" << std::to_string(name.size()) + name << "\");\n";
+			//@note: The additional names for support VC++
+			m_out << "\t\t\treflected_classes.insert(\"class " << name << "\");\n";
 		}
 		m_out << "\t\t}\n\t\treturn reflected_classes.find(typeid(o).name()) != reflected_classes.end();\n\t}\n\n";
 		m_out << "}; // class reflect_manager\n\n";

@@ -85,7 +85,7 @@ private:
 
 private:
         clang::CompilerInstance m_compiler;
-	reflector::cmd_parser m_cmd_parser;
+	cmd_parser m_cmd_parser;
 }; // class application
 
 ///@{
@@ -180,7 +180,7 @@ void application::parse_the_AST()
 	if (0 != visitor.get_reflected_class_count()) {
 		writer(m_cmd_parser.get_output_file()).write_reflected(visitor.get_reflected_classes());
 	}
-	massenger::print("Count of reflected class is " + utils::to_string(visitor.get_reflected_class_count()) + ".");
+	massenger::print("Count of reflected class is " + std::to_string(visitor.get_reflected_class_count()) + ".");
 }
 
 int application::run()

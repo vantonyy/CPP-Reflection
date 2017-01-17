@@ -14,14 +14,6 @@
 
 namespace utils {
 
-template <typename DataType>
-std::string to_string(const DataType& x)
-{
-	std::stringstream ss;
-	ss << x;
-	return ss.str();
-}
-
 void replace(std::string& str, const std::string& from, const std::string& to)
 {
 	std::string::size_type start_pos = 0;
@@ -29,6 +21,19 @@ void replace(std::string& str, const std::string& from, const std::string& to)
 		str.replace(start_pos, from.size(), to);
 		start_pos += to.size();
 	}
+}
+
+void split(const std::string& str, std::vector<std::string>& strings, std::string any_of)
+{
+	std::string::size_type b_pos = 0;
+	std::string::size_type e_pos = 0;
+	const std::string::size_type step = any_of.size();
+	while (std::string::npos != (e_pos = str.find(any_of, e_pos))) {
+		strings.push_back(str.substr(b_pos, e_pos - b_pos));
+		e_pos += step;
+		b_pos = e_pos;
+	}
+	strings.push_back(str.substr(b_pos, e_pos));
 }
 
 } // namespace utils
@@ -146,7 +151,7 @@ private:
 		method::param_const_iterator e = m_method->param_end();
 		unsigned idx = 0;
 		while (b != e) {
-			res += (*b++)->getType().getAsString() + " p" + utils::to_string(++idx);
+			res += (*b++)->getType().getAsString() + " p" + std::to_string(++idx);
 			if (b != e) {
 				res += ", ";
 			}
@@ -157,17 +162,29 @@ private:
 
 	std::string extract_argument_list() const
 	{
-		ASSERT(0 != m_method);
+		typedef std::vector<std::string> Strings;
+		Strings params;
+		utils::split(m_param_types, params, ", ");
 		std::string res;
-		const unsigned count = get_params_count() + 1;
-		for (unsigned i = 1; i != count; ++i) {
-			res += "p" + utils::to_string(i);
-			if (i + 1 != count) {
+		Strings::const_iterator b = params.begin();
+		Strings::const_iterator e = params.end();
+		while( b != e ) {
+			res += make_forward(*b++);
+			if (b != e) {
 				res += ", ";
 			}
 		}
 		return res;
 	}
+
+	std::string make_forward(const std::string& str) const
+	{
+		std::string::const_reverse_iterator i = std::find(str.rbegin(), str.rend(), ' ');
+		ASSERT(i != str.rend());
+		const unsigned pos = str.rend() - i;
+		return "std::forward<" + str.substr(0, pos - 1) + ">(" + str.substr(pos, str.size()) + ")";
+	}
+
 private:
 	method* m_method;
 	std::string m_return_type;
@@ -251,7 +268,7 @@ private:
 		out << "\t\t";
 		if (info.non_void_return_type()) {
 			out << "return ";
-		} //@TODO: arguments should be pass via std::forward<typeName>(p[1-9]), ...
+		} // TODO forward
 		out << "(o.*found->second)(" << info.get_argument_list() <<  ");\n\t}\n\n";
 	}
 
@@ -550,7 +567,7 @@ private:
 	
 private:
 	source_class* m_source_class;
-	invok_output m_methods;
+	invoke_output m_methods;
 }; // class reflected_class
 
 #endif // REFLECTED_CLASS_HPP
