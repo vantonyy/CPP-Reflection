@@ -185,7 +185,7 @@ private:
 	typedef method_info::method_names method_names;
 	typedef std::map<method_info, method_names, method_info::signature_comparator> methods_map;
 public:
-	invok_output(clang::CXXRecordDecl::method_range r)
+	invoke_output(clang::CXXRecordDecl::method_range r)
 	{
 		init(r);
 	}
