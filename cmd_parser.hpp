@@ -7,8 +7,6 @@
 
 #include <string>
 
-namespace reflector {
-
 // @class cmd_parser
 class cmd_parser
 {
@@ -80,7 +78,5 @@ private:
 	std::string m_input_file;
 	std::string m_output_file;
 }; // class cmd_parser
-
-} // namespace reflector
 
 #endif // CMD_PARSER_HPP
