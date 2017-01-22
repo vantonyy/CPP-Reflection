@@ -49,4 +49,4 @@ void split(const std::string& str, std::vector<std::string>& strings, std::strin
 
 } // namespace utils
 
-#endif UTILS_HPP
+#endif // UTILS_HPP

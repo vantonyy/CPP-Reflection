@@ -12,6 +12,7 @@
 #define OPTION_PARSER_HPP
 
 #include "messenger.hpp"
+#include "utils.hpp"
 
 #include <string>
 
