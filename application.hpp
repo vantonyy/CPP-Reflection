@@ -1,10 +1,21 @@
+/*
+* Copyright (C) 2016 Vladimir Antonyan <antony_v@outlook.com>
+* Permission is hereby granted, free of charge, to any person obtaining a copy
+* of this software and associated documentation files (the "Software"), to deal
+* in the Software without restriction, including without limitation the rights
+* to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+* copies of the Software, and to permit persons to whom the Software is
+* furnished to do so, subject to the following conditions:
+*/
+
 #ifndef APPLICATION_HPP
 #define APPLICATION_HPP
 
-#include "cmd_parser.hpp"
 #include "debug.hpp"
 #include "messenger.hpp"
+#include "option_parser.hpp"
 #include "reflect_output.hpp"
+#include "utils.hpp"
 #include "visitor.hpp"
 
 #include <clang/Frontend/CompilerInstance.h>
@@ -28,7 +39,7 @@ class writer
 public:
 	explicit writer(const std::string& file_name)
 		: m_file_name(file_name)
-		, m_do(cmd_parser::exist_file(file_name.c_str()) ? "Rewrite" : "Generate")
+		, m_do(utils::exist_file(file_name.c_str()) ? "Rewrite" : "Generate")
 	{
 	}
 
@@ -78,13 +89,13 @@ private:
 
 private:
         clang::CompilerInstance m_compiler;
-	cmd_parser m_cmd_parser;
+	option_parser m_option_parser;
 }; // class application
 
 application::application(int c, char const **v)
-	: m_cmd_parser(c, v)
+	: m_option_parser(c, v)
 {
-	if (m_cmd_parser.is_valid()) {
+	if (m_option_parser.is_valid()) {
 		initialize_compiler();
 	}
 }
@@ -127,7 +138,7 @@ void application::set_invocation()
 	ASSERT(m_compiler.hasDiagnostics());
 	clang::CompilerInvocation* invocation = new clang::CompilerInvocation;
 	clang::CompilerInvocation::CreateFromArgs(
-				*invocation, m_cmd_parser.begin() + 1, m_cmd_parser.end(), m_compiler.getDiagnostics());
+				*invocation, m_option_parser.begin() + 1, m_option_parser.end(), m_compiler.getDiagnostics());
 	clang::LangOptions lang_opts;
 	lang_opts.GNUMode = 1;
 	lang_opts.CXXExceptions = 1;
@@ -149,7 +160,7 @@ void application::set_default_target_triple()
 void application::set_main_file_id()
 {
 	ASSERT(m_compiler.hasSourceManager());
-	const clang::FileEntry* file = m_compiler.getFileManager().getFile(m_cmd_parser.get_input_file());
+	const clang::FileEntry* file = m_compiler.getFileManager().getFile(m_option_parser.get_input_file());
 	ASSERT(0 != file);
 	clang::SourceManager& sc_mgr = m_compiler.getSourceManager();
 	sc_mgr.setMainFileID(sc_mgr.createFileID(file, clang::SourceLocation(), clang::SrcMgr::C_User));	
@@ -169,13 +180,13 @@ void application::parse_the_AST()
 	ParseAST(preproc, &consumer, m_compiler.getASTContext(), false, clang::TU_Complete, 0, true);
 	m_compiler.getDiagnosticClient().EndSourceFile();
 	if (visitor.has_reflected_class()) {
-		writer(m_cmd_parser.get_output_file()).write_reflected(visitor.get_reflected_classes());
+		writer(m_option_parser.get_output_file()).write_reflected(visitor.get_reflected_classes());
 	}
 }
 
 int application::run()
 {
-	if (!m_cmd_parser.is_valid()) {
+	if (!m_option_parser.is_valid()) {
 		return 1;
 	}
 	parse_the_AST();
