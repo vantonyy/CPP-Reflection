@@ -168,22 +168,6 @@ private:
 		}
 		return res;
 	}
-
-	//@TODO implement
-	//void keep_code_stile(std::string& str, unsigned count) const
-	//{
-	//	if (0 == count) {
-	//		return;
-	//	}
-	//	std::string::size_type pos = count;
-	//	std::string tab = "\n\t\t\t\t";
-	//	while (str.size() > pos && (pos = str.find(',', pos)) != std::string::npos) {
-	//		str.insert(pos + 1, tab);
-	//		pos += count - (tab.size() / 2 - 3) * (count / 10);
-	//		tab += "\t";
-	//	}
-	//}
-
 private:
 	method* m_method;
 	std::string m_return_type;
