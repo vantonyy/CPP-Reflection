@@ -67,12 +67,19 @@ private:
 class application
 {
 public:
+	//@brief constructor
 	application(int c, char const **v);
 public:
+	//@brief Runs application.
+	//@return Exit code.
 	int run();
 
+	//@brief Gets application's name.
+	//@return name of application
 	static const std::string& get_name();
 
+	//@brief Gets application's description.
+	//@return description of application
 	static const std::string& get_description();
 private:	
 	void initialize_compiler();
@@ -85,7 +92,7 @@ private:
 	
 	void set_main_file_id();
 
-	void parse_the_AST();
+	void parse_ast();
 
 private:
         clang::CompilerInstance m_compiler;
@@ -131,6 +138,7 @@ void application::set_header_search_options()
 	clang::HeaderSearchOptions &h = m_compiler.getHeaderSearchOpts();
 	h.AddPath("/usr/local/include", clang::frontend::Angled, false, false);
 	h.AddPath("/usr/include", clang::frontend::Angled, false, false);
+	//TODO: should to add an option to allowing user set the path.
 }
 
 void application::set_invocation()
@@ -166,7 +174,7 @@ void application::set_main_file_id()
 	sc_mgr.setMainFileID(sc_mgr.createFileID(file, clang::SourceLocation(), clang::SrcMgr::C_User));	
 }
 
-void application::parse_the_AST()
+void application::parse_ast()
 {
 	ASSERT(m_compiler.hasSourceManager());
 	clang::SourceManager& sc_mgr = m_compiler.getSourceManager();
@@ -189,7 +197,7 @@ int application::run()
 	if (!m_option_parser.is_valid()) {
 		return 1;
 	}
-	parse_the_AST();
+	parse_ast();
 	return 0;
 }
 
