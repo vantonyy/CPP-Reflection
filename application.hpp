@@ -71,7 +71,7 @@ public:
 	application(int c, char const **v);
 public:
 	//@brief Runs application.
-	//@return Exit code.
+	//@return exit code
 	int run();
 
 	//@brief Gets application's name.
