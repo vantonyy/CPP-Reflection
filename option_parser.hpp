@@ -25,8 +25,8 @@ public:
 		, m_arg_value(v)
 		, m_input_file("")
 		, m_output_file("")
-	{
-		parse();
+	{	
+		parse();	
 	}
 
 	const std::string& get_input_file() const
@@ -65,12 +65,18 @@ private:
 			return;
 		}
 		m_input_file = m_arg_value[1];
-		m_output_file = m_input_file.substr(0, m_input_file.find('.')) + "_reflected.hpp";
+		m_output_file = generate_out_file_name(m_input_file);
+	}
+
+	std::string generate_out_file_name(const std::string& in_file) const
+	{
+		static const std::string prefix = "_reflected.hpp";
+		return in_file.substr(0, in_file.find('.')) + prefix;
 	}
 
 	std::string usage() const
 	{
-		return std::string(m_arg_value[0]) + "  <input file>";
+		return std::string(m_arg_value[0]) + " <input file>";
 	}
 
 private:
