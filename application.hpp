@@ -138,7 +138,7 @@ void application::set_header_search_options()
 	clang::HeaderSearchOptions &h = m_compiler.getHeaderSearchOpts();
 	h.AddPath("/usr/local/include", clang::frontend::Angled, false, false);
 	h.AddPath("/usr/include", clang::frontend::Angled, false, false);
-	//TODO: should to add an option to allowing user set the path.
+	//TODO: should to add an option to allow user set the path.
 }
 
 void application::set_invocation()
