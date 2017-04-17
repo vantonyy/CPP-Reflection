@@ -1,5 +1,5 @@
 /*
-* Copyright (C) 2016 Vladimir Antonyan <antony_v@outlook.com>
+* Copyright (C) 2016 Vladimir Antonyan <antonyan_v@outlook.com>
 * Permission is hereby granted, free of charge, to any person obtaining a copy
 * of this software and associated documentation files (the "Software"), to deal
 * in the Software without restriction, including without limitation the rights
@@ -147,7 +147,7 @@ std::string application::help() const
 	options o;
 	get_options(o);
 	o.for_each_option(
-		[&h](definition d)
+		[&h](const definition& d)
 		{
 			h += "  " + d.get_name() + ": " + d.get_description() +
 			(d.is_optional() ? ": optional" : d.is_hidden() ? "" : ": requared") + "\n"; 
