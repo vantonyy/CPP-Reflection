@@ -18,11 +18,17 @@
 
 namespace utils {
 
-bool exist_file(const char* file_name)
+bool exist_file(const std::string& file_name)
 {
 	static clang::FileSystemOptions fs_opts;
 	static clang::FileManager fm(fs_opts);
-	return 0 != fm.getFile(file_name);
+	return 0 != fm.getFile(file_name.c_str());
+}
+
+std::string generate_out_file_name(const std::string& in_file)
+{
+	static const std::string prefix = "_reflected.hpp";
+	return in_file.substr(0, in_file.find('.')) + prefix;
 }
 
 void replace(std::string& str, const std::string& from, const std::string& to)

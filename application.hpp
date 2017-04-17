@@ -13,7 +13,7 @@
 
 #include "debug.hpp"
 #include "messenger.hpp"
-#include "option_parser.hpp"
+#include "option.hpp"
 #include "reflect_output.hpp"
 #include "utils.hpp"
 #include "visitor.hpp"
@@ -71,7 +71,7 @@ public:
 	application(int c, char const **v);
 public:
 	//@brief Runs application.
-	//@return exit code
+	//@return Exit code.
 	int run();
 
 	//@brief Gets application's name.
@@ -81,7 +81,7 @@ public:
 	//@brief Gets application's description.
 	//@return description of application
 	static const std::string& get_description();
-private:	
+private:
 	void initialize_compiler();
 
 	void set_header_search_options();
@@ -94,15 +94,26 @@ private:
 
 	void parse_ast();
 
+	void get_options(options&) const;
+
+	bool parse_parameters(unsigned, char const **);
+
+	std::string get_hidden_option_value(const std::string&) const;
+
+	std::string usage(const char*) const;
+
+	std::string version() const;
+
+	std::string help() const;
 private:
         clang::CompilerInstance m_compiler;
-	option_parser m_option_parser;
+	std::string m_input_file_name;
+	std::string m_output_file_name;
 }; // class application
 
 application::application(int c, char const **v)
-	: m_option_parser(c, v)
 {
-	if (m_option_parser.is_valid()) {
+	if ( parse_parameters(c, v) ) {
 		initialize_compiler();
 	}
 }
@@ -117,6 +128,32 @@ const std::string& application::get_description()
 {
 	static const std::string desc = "Generate reflection for C++ programming language";
 	return desc;
+}
+
+std::string application::usage(const char* path) const
+{
+	return std::string(path ) + " -i <input file>";
+}
+
+std::string application::version() const
+{
+	return "Version: a2017.06";
+}
+
+std::string application::help() const
+{
+	std::string h = get_name() + ":  " + get_description() + "\n";
+	h += "Options:\n";
+	options o;
+	get_options(o);
+	o.for_each_option(
+		[&h](definition d)
+		{
+			h += "  " + d.get_name() + ": " + d.get_description() +
+			(d.is_optional() ? ": optional" : d.is_hidden() ? "" : ": requared") + "\n"; 
+		}
+	);
+	return h;
 }
 
 void application::initialize_compiler()
@@ -138,15 +175,20 @@ void application::set_header_search_options()
 	clang::HeaderSearchOptions &h = m_compiler.getHeaderSearchOpts();
 	h.AddPath("/usr/local/include", clang::frontend::Angled, false, false);
 	h.AddPath("/usr/include", clang::frontend::Angled, false, false);
-	//TODO: should to add an option to allow user set the path.
+	//TODO: should to add an option to allowing user set the path.
 }
 
 void application::set_invocation()
 {
 	ASSERT(m_compiler.hasDiagnostics());
 	clang::CompilerInvocation* invocation = new clang::CompilerInvocation;
-	clang::CompilerInvocation::CreateFromArgs(
-				*invocation, m_option_parser.begin() + 1, m_option_parser.end(), m_compiler.getDiagnostics());
+	ASSERT(!m_input_file_name.empty());
+	const char* dummy_arg[1];
+	dummy_arg[0] = m_input_file_name.c_str();
+	clang::CompilerInvocation::CreateFromArgs(*invocation,
+						   dummy_arg,
+						   dummy_arg + 1,
+						   m_compiler.getDiagnostics());
 	clang::LangOptions lang_opts;
 	lang_opts.GNUMode = 1;
 	lang_opts.CXXExceptions = 1;
@@ -168,7 +210,7 @@ void application::set_default_target_triple()
 void application::set_main_file_id()
 {
 	ASSERT(m_compiler.hasSourceManager());
-	const clang::FileEntry* file = m_compiler.getFileManager().getFile(m_option_parser.get_input_file());
+	const clang::FileEntry* file = m_compiler.getFileManager().getFile(m_input_file_name);
 	ASSERT(0 != file);
 	clang::SourceManager& sc_mgr = m_compiler.getSourceManager();
 	sc_mgr.setMainFileID(sc_mgr.createFileID(file, clang::SourceLocation(), clang::SrcMgr::C_User));	
@@ -188,17 +230,79 @@ void application::parse_ast()
 	ParseAST(preproc, &consumer, m_compiler.getASTContext(), false, clang::TU_Complete, 0, true);
 	m_compiler.getDiagnosticClient().EndSourceFile();
 	if (visitor.has_reflected_class()) {
-		writer(m_option_parser.get_output_file()).write_reflected(visitor.get_reflected_classes());
+		writer(m_output_file_name).write_reflected(visitor.get_reflected_classes());
 	}
 }
 
 int application::run()
 {
-	if (!m_option_parser.is_valid()) {
+	if (m_input_file_name.empty()) {
 		return 1;
 	}
 	parse_ast();
 	return 0;
+}
+
+void application::get_options(options& o) const
+{
+	definition d1("-i", "input file", requared);
+	o.add_option(d1);
+	definition d2("-o", "output file", optional);
+	o.add_option(d2);
+	definition d3("-h", "help", hidden);
+	o.add_option(d3);
+	definition d4("-v", "version", hidden);
+	o.add_option(d4);
+}
+
+bool application::parse_parameters(unsigned c, char const **v)
+{
+	ASSERT(0 != v);
+	if (1 == c) {
+		massenger::print("Usage: " + usage(v[0]));
+		return false;
+	}
+	options o;
+	get_options(o);
+	for (unsigned i = 1; i < c; i += 2) {
+		definition d;
+		if (!o.get_option(v[i], d)) {
+			massenger::print("Unknown option: " + std::string(v[i]));
+			return false;
+		}
+		if (d.is_hidden()) {
+			massenger::print(get_hidden_option_value(d.get_name()));
+			return false;
+		}
+		if (i + 1 == c) {
+			massenger::print("Incorect argument for option: " + std::string(v[i]));
+			return false;
+		}
+		o.set_value(v[i], v[i + 1]);
+	}
+	m_input_file_name = o.get_value("-i");
+	if (m_input_file_name.empty()) {
+		massenger::error("The input file must to provide");
+		return false;
+	}
+	if (!utils::exist_file(m_input_file_name)) {
+		massenger::error("The input file with name '" + m_input_file_name + "' does not exist");
+		return false;
+	}
+	m_output_file_name = o.get_value("-o");
+	if (m_output_file_name.empty()) {
+		m_output_file_name = utils::generate_out_file_name(m_input_file_name);
+	}
+	return true;
+}
+
+std::string application::get_hidden_option_value(const std::string& n) const
+{
+	if (n == "-h") {
+		return help();
+	}
+	ASSERT(n == "-v");
+	return version();
 }
 
 } // namespace reflector

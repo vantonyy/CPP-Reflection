@@ -168,6 +168,22 @@ private:
 		}
 		return res;
 	}
+
+	//@TODO implement
+	//void keep_code_stile(std::string& str, unsigned count) const
+	//{
+	//	if (0 == count) {
+	//		return;
+	//	}
+	//	std::string::size_type pos = count;
+	//	std::string tab = "\n\t\t\t\t";
+	//	while (str.size() > pos && (pos = str.find(',', pos)) != std::string::npos) {
+	//		str.insert(pos + 1, tab);
+	//		pos += count - (tab.size() / 2 - 3) * (count / 10);
+	//		tab += "\t";
+	//	}
+	//}
+
 private:
 	method* m_method;
 	std::string m_return_type;
@@ -223,6 +239,7 @@ private:
 
 	bool supported(method* m) const
 	{
+		ASSERT(0 != m);
 		return !m->isStatic() && m->isUserProvided() && clang::Decl::Kind::CXXMethod == m->getKind() &&
 	                m->getAccess() == clang::AccessSpecifier::AS_public && !m->isDefaulted() &&
 	               !m->isCopyAssignmentOperator() && !m->isMoveAssignmentOperator();
@@ -486,7 +503,7 @@ private:
 
 	void dump_has_any_dependent_bases(clang::raw_ostream& out) const
 	{
-		out << "\tstatic bool dump_has_any_dependent_bases()\n\t{\n";
+		out << "\tstatic bool has_any_dependent_bases()\n\t{\n";
 		out << "\t\treturn " << (has_any_dependent_bases() ? "true" : "false") << ";\n\t}\n\n";
 	}
 
