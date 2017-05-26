@@ -10,7 +10,7 @@ Diploma work
 - Installation:
 
 - Usage:
-greflect input file *(.cpp or .hpp/.h)
+greflect -i <input file> -o <output file>
 - Bug Reporting:
 
 - Tests:
