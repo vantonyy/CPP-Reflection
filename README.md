@@ -10,7 +10,7 @@ Diploma work
 - Installation:
 
 - Usage:
-greflect -i <input file> -o <output file>
+greflect -i input_file -o output_file
 - Bug Reporting:
 
 - Tests:
