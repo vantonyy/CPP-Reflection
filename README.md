@@ -7,12 +7,12 @@ Presenation.ppt
 Diploma work
 - Usage:
 greflect -i input_file -o output_file
-- Bug Reporting:
 - License:
   A short snippet describing the license (MIT)
 - Downloading:
   https://github.com/vantonyy/SSreflect/archive/master.zip
 - Development:
-- Tests:
+#Tests:
 - Contributors:
 - Installation:
+- Bug Reporting:
